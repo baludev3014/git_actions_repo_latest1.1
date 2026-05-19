@@ -1,0 +1,70 @@
+name: CI/CD pipeline with github actions
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v5
+      
+      - name: test the app
+        run: npm run test
+  
+  building_actifact:
+    runs-on: ubuntu-latest
+    needs:
+      - testing
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v5
+      - name: logging the build completed msg
+        run: echo "Build Completed"
+  
+  build_docker_image:
+    runs-on: ubuntu-latest 
+    needs: 
+      - building_actifact
+    
+    steps:
+
+      - name: checout repo  
+        uses: actions/checkout@v5
+
+      - name: installing docker
+        run: |
+          sudo apt update -y
+          sudo apt install ca-certificates curl
+          sudo install -m 0755 -d /etc/apt/keyrings
+          sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+          sudo chmod a+r /etc/apt/keyrings/docker.asc
+          sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+          Components: stable
+          Architectures: $(dpkg --print-architecture)
+          Signed-By: /etc/apt/keyrings/docker.asc
+          EOF
+          sudo apt update -y
+
+      - name: installing docker additional packages
+        run: | 
+          sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      
+      - name: building the docker image 
+        run: docker build -t pradeep3014/git_actions_repo_latest1.1:latest .
+      
+      - name: performing login operation to push into docker hub
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin ${{ secrets.DOCKER_REPO_TOKEN }}
+          docker push pradeep3014/git_actions_repo_latest1.1:latest
+      
+      - name: log message
+        run: echo "Pushing into dockerhub success."
+  
+
+
