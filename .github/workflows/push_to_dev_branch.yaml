@@ -60,7 +60,7 @@ jobs:
       
       - name: performing login operation to push into docker hub
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin ${{ secrets.DOCKER_REPO_TOKEN }}
+          echo ${{ secrets.DOCKER_REPO_TOKEN }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin 
           docker push pradeep3014/git_actions_repo_latest1.1:dev
       
       - name: log message
